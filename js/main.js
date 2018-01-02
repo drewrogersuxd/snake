@@ -1,3 +1,4 @@
+'use strict';
 //////////////////////////////////////////////
 let ijnid = 0;
 
@@ -24,6 +25,53 @@ let gamebgW = gameBoard.offsetWidth;
 let gamebgH = gameBoard.offsetHeight;
 
 let animationInterval = null;
+let countdownTimerInterval = null;
+let instructionsTime = 10;
+
+const yesButton = document.getElementById('yesBtn');
+const noButton = document.getElementById('noBtn');
+const welcomeModal = document.getElementById('welcome');
+const welcomeContent = document.getElementById('welcomeTxt');
+
+const yesButtonHandler = (evt) => {
+    cleanUpWelcomeButtons();
+    welcomeContent.innerHTML = 'SNAKE is a game where you move a snake around the<br/> \
+                                screen with your arrow buttons.</p> \
+                                If you eat food, the snake will grow longer.<br/> \
+                                If the snake touches any edges of the game area<br/> \
+                                OR<br/> \
+                                if the snake runs into itself...<br/> \
+                                it is GAME OVER.<br/> \
+                                <p><span>READY PLAYER ONE</span></p> \
+                                <span style="font-size:12px">[coming soon to a theatre near you this Spring]</span><br/> \
+                                <span id="countdownTxt">'+instructionsTime+'</span>';
+    countdownTimerInterval = setInterval(countdownTimer, 1000);
+};
+
+const countdownTimer = () => {
+    instructionsTime--;
+    document.getElementById('countdownTxt').innerHTML = instructionsTime;
+    if(instructionsTime === 0){
+        clearInterval(countdownTimerInterval);
+        welcomeModal.style.display = 'none';
+        // get the game started
+        init();
+    }
+};
+
+const noButtonHandler = (evt) => {
+    cleanUpWelcomeButtons();
+    welcomeContent.innerHTML = '<span>OK - Bye</span>';
+    setTimeout(() => {window.location.href = 'https://www.squarespace.com/';}, 1000);
+};
+
+yesButton.addEventListener('click', yesButtonHandler, false);
+noButton.addEventListener('click', noButtonHandler, false);
+
+const cleanUpWelcomeButtons = () => {
+    yesButton.removeEventListener('click', yesButtonHandler);
+    noButton.removeEventListener('click', noButtonHandler);
+};
 
 const init = () => {
     document.addEventListener('keydown', handleArrowKeys, false);
@@ -210,8 +258,5 @@ const handleArrowKeys = (evt) => {
 const handleGameOver = () => {
     clearInterval(animationInterval);
     document.removeEventListener('keydown', handleArrowKeys);
-    gameBoard.innerHTML = 'GAME OVER';
+    gameBoard.innerHTML = '<div id="gameOver">game over</div>';
 };
-
-// get the game started
-init();

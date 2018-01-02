@@ -1,6 +1,6 @@
 'use strict';
-
 //////////////////////////////////////////////
+
 var ijnid = 0;
 
 var aniTime = 50;
@@ -26,6 +26,55 @@ var gamebgW = gameBoard.offsetWidth;
 var gamebgH = gameBoard.offsetHeight;
 
 var animationInterval = null;
+var countdownTimerInterval = null;
+var instructionsTime = 10;
+
+var yesButton = document.getElementById('yesBtn');
+var noButton = document.getElementById('noBtn');
+var welcomeModal = document.getElementById('welcome');
+var welcomeContent = document.getElementById('welcomeTxt');
+
+var yesButtonHandler = function yesButtonHandler(evt) {
+    cleanUpWelcomeButtons();
+    welcomeContent.innerHTML = 'SNAKE is a game where you move a snake around the<br/> \
+                                screen with your arrow buttons.</p> \
+                                If you eat food, the snake will grow longer.<br/> \
+                                If the snake touches any edges of the game area<br/> \
+                                OR<br/> \
+                                if the snake runs into itself...<br/> \
+                                it is GAME OVER.<br/> \
+                                <p><span>READY PLAYER ONE</span></p> \
+                                <span style="font-size:12px">[coming soon to a theatre near you this Spring]</span><br/> \
+                                <span id="countdownTxt">' + instructionsTime + '</span>';
+    countdownTimerInterval = setInterval(countdownTimer, 1000);
+};
+
+var countdownTimer = function countdownTimer() {
+    instructionsTime--;
+    document.getElementById('countdownTxt').innerHTML = instructionsTime;
+    if (instructionsTime === 0) {
+        clearInterval(countdownTimerInterval);
+        welcomeModal.style.display = 'none';
+        // get the game started
+        init();
+    }
+};
+
+var noButtonHandler = function noButtonHandler(evt) {
+    cleanUpWelcomeButtons();
+    welcomeContent.innerHTML = '<span>OK - Bye</span>';
+    setTimeout(function () {
+        window.location.href = 'https://www.squarespace.com/';
+    }, 1000);
+};
+
+yesButton.addEventListener('click', yesButtonHandler, false);
+noButton.addEventListener('click', noButtonHandler, false);
+
+var cleanUpWelcomeButtons = function cleanUpWelcomeButtons() {
+    yesButton.removeEventListener('click', yesButtonHandler);
+    noButton.removeEventListener('click', noButtonHandler);
+};
 
 var init = function init() {
     document.addEventListener('keydown', handleArrowKeys, false);
@@ -114,7 +163,7 @@ var animationHandler = function animationHandler() {
     var previousHeadSpot = { top: snakeHead.style.top, left: snakeHead.style.left };
 
     var collisionDetected = checkCollision(snakeHead);
-    console.warn('ijnid ', collisionDetected);
+
     if (rightMove + snakeHead.offsetWidth - moveDist >= gamebgW || snakeHead.offsetLeft < 1 || downMove + snakeHead.offsetHeight - moveDist >= gamebgH || snakeHead.offsetTop < 1 || collisionDetected) {
         //out of bounds or hit itself so game over
         handleGameOver();
@@ -212,8 +261,5 @@ var handleArrowKeys = function handleArrowKeys(evt) {
 var handleGameOver = function handleGameOver() {
     clearInterval(animationInterval);
     document.removeEventListener('keydown', handleArrowKeys);
-    gameBoard.innerHTML = 'GAME OVER';
+    gameBoard.innerHTML = '<div id="gameOver">game over</div>';
 };
-
-// get the game started
-init();
