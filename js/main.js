@@ -1,6 +1,4 @@
 'use strict';
-//////////////////////////////////////////////
-let ijnid = 0;
 
 const aniTime = 50;
 const initalPlacement = 10;
@@ -23,6 +21,11 @@ let snakeParts = [];
 const gameBoard = document.getElementById('gamebg');
 let gamebgW = gameBoard.offsetWidth;
 let gamebgH = gameBoard.offsetHeight;
+
+const foodSpacingCol = 50;
+const foodSpacingRow = 20;
+const foodWidth = 20;
+let foodRowCount = 1;
 
 let animationInterval = null;
 let countdownTimerInterval = null;
@@ -73,13 +76,45 @@ const cleanUpWelcomeButtons = () => {
     noButton.removeEventListener('click', noButtonHandler);
 };
 
+const makeElement = (type, classes) => {
+    let theElem = document.createElement(type);
+    theElem.classList = classes;
+    return theElem;
+};
+
 const init = () => {
     document.addEventListener('keydown', handleArrowKeys, false);
+    makeFood();
     makeSnake();
     positionSnake();
     initSnake();
     animationInterval = setInterval(animationHandler, aniTime);
-}
+};
+
+const makeFood = () => {
+    for(let i = 0; i < gamebgH; i = i+(foodWidth+foodSpacingRow)){
+        for(let j = 0; j < gamebgW; j = j+(foodWidth+foodSpacingCol)){
+            let food = makeElement('div', 'food');
+            food.style.width = foodWidth+'px';
+            food.style.height = foodWidth+'px';
+            food.style.top = i+'px';
+            // randomize alternate row positions a bit
+            if(isEven(foodRowCount)) {
+                let ranNum = Math.floor(Math.random()*(foodSpacingCol-2+1)+2);
+                food.style.left = (j+ranNum)+'px';
+            }
+            else{
+                food.style.left = j+'px';
+            }
+            gameBoard.appendChild(food);
+        }
+        foodRowCount++;
+    }
+};
+
+const isEven = (n) => {
+    return n % 2 == 0;
+};
 
 const makeSnake = () => {
     for(let i = 0; i < difficulty; i++){
@@ -91,13 +126,6 @@ const makeSnake = () => {
         }
         snakeParts.push(makeElement('div', 'snake '+classname));
     }
-};
-
-const makeElement = (type, classes) => {
-    let theElem = document.createElement(type);
-    theElem.classList = classes;
-    //console.log('making an element: ', theElem);
-    return theElem;
 };
 
 const positionSnake = () => {
@@ -142,13 +170,6 @@ const addSnakePart = () => {
 };
 
 const animationHandler = () => {
-/////////////////////////////////////////////////////////
-    if(ijnid === 20){
-        addSnakePart();
-        ijnid = 0;
-    }
-  
-
     const upMove = Number(parseInt(snakeHead.style.top, 10)-moveDist);
     const rightMove = Number(parseInt(snakeHead.style.left, 10)+moveDist);
     const downMove = Number(parseInt(snakeHead.style.top, 10)+moveDist);
@@ -156,7 +177,9 @@ const animationHandler = () => {
 
     const previousHeadSpot = {top: snakeHead.style.top, left: snakeHead.style.left};
 
-    let collisionDetected = checkCollision(snakeHead);
+    const eatFood = checkFoodCollision(snakeHead);
+    if(eatFood) addSnakePart();
+    const collisionDetected = checkCollision(snakeHead);
 
     if ((rightMove+snakeHead.offsetWidth-moveDist) >= gamebgW 
         || snakeHead.offsetLeft < 1
@@ -186,9 +209,27 @@ const animationHandler = () => {
         }
         updateBodyPos(previousHeadSpot);
     }
+};
 
-//////////////////////////////////
-    ijnid++;
+const checkFoodCollision = (item) => {
+    let collisionDetected = false;
+    const snakeHeadProps = item.getBoundingClientRect();
+    const allFoodElements = document.getElementsByClassName('food');
+    const allFood = [...allFoodElements];
+     for(let i = 0; i < allFood.length; i++){
+        let foodProps = allFood[i].getBoundingClientRect();
+        collisionDetected = !(
+            ((snakeHeadProps.y + snakeHeadProps.height) < (foodProps.y)) ||
+            (snakeHeadProps.y > (foodProps.y + foodProps.height)) ||
+            ((snakeHeadProps.x + snakeHeadProps.width) < foodProps.x) ||
+            (snakeHeadProps.x > (foodProps.x + foodProps.width))
+        );
+        if(collisionDetected) {
+            gameBoard.removeChild(allFood[i]);
+            return collisionDetected;
+        }    
+    }
+    return collisionDetected
 };
 
 const checkCollision = (item) => {

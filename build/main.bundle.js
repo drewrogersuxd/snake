@@ -1,7 +1,6 @@
 'use strict';
-//////////////////////////////////////////////
 
-var ijnid = 0;
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 var aniTime = 50;
 var initalPlacement = 10;
@@ -24,6 +23,11 @@ var snakeParts = [];
 var gameBoard = document.getElementById('gamebg');
 var gamebgW = gameBoard.offsetWidth;
 var gamebgH = gameBoard.offsetHeight;
+
+var foodSpacingCol = 50;
+var foodSpacingRow = 20;
+var foodWidth = 20;
+var foodRowCount = 1;
 
 var animationInterval = null;
 var countdownTimerInterval = null;
@@ -76,12 +80,43 @@ var cleanUpWelcomeButtons = function cleanUpWelcomeButtons() {
     noButton.removeEventListener('click', noButtonHandler);
 };
 
+var makeElement = function makeElement(type, classes) {
+    var theElem = document.createElement(type);
+    theElem.classList = classes;
+    return theElem;
+};
+
 var init = function init() {
     document.addEventListener('keydown', handleArrowKeys, false);
+    makeFood();
     makeSnake();
     positionSnake();
     initSnake();
     animationInterval = setInterval(animationHandler, aniTime);
+};
+
+var makeFood = function makeFood() {
+    for (var i = 0; i < gamebgH; i = i + (foodWidth + foodSpacingRow)) {
+        for (var j = 0; j < gamebgW; j = j + (foodWidth + foodSpacingCol)) {
+            var food = makeElement('div', 'food');
+            food.style.width = foodWidth + 'px';
+            food.style.height = foodWidth + 'px';
+            food.style.top = i + 'px';
+            // randomize alternate row positions a bit
+            if (isEven(foodRowCount)) {
+                var ranNum = Math.floor(Math.random() * (foodSpacingCol - 2 + 1) + 2);
+                food.style.left = j + ranNum + 'px';
+            } else {
+                food.style.left = j + 'px';
+            }
+            gameBoard.appendChild(food);
+        }
+        foodRowCount++;
+    }
+};
+
+var isEven = function isEven(n) {
+    return n % 2 == 0;
 };
 
 var makeSnake = function makeSnake() {
@@ -94,13 +129,6 @@ var makeSnake = function makeSnake() {
         }
         snakeParts.push(makeElement('div', 'snake ' + classname));
     }
-};
-
-var makeElement = function makeElement(type, classes) {
-    var theElem = document.createElement(type);
-    theElem.classList = classes;
-    //console.log('making an element: ', theElem);
-    return theElem;
 };
 
 var positionSnake = function positionSnake() {
@@ -146,15 +174,10 @@ var addSnakePart = function addSnakePart() {
         default:
     }
     gameBoard.appendChild(snakeParts[snakeParts.length - 2]);
+    console.log('growing!');
 };
 
 var animationHandler = function animationHandler() {
-    /////////////////////////////////////////////////////////
-    if (ijnid === 20) {
-        addSnakePart();
-        ijnid = 0;
-    }
-
     var upMove = Number(parseInt(snakeHead.style.top, 10) - moveDist);
     var rightMove = Number(parseInt(snakeHead.style.left, 10) + moveDist);
     var downMove = Number(parseInt(snakeHead.style.top, 10) + moveDist);
@@ -162,6 +185,8 @@ var animationHandler = function animationHandler() {
 
     var previousHeadSpot = { top: snakeHead.style.top, left: snakeHead.style.left };
 
+    var eatFood = checkFoodCollision(snakeHead);
+    if (eatFood) addSnakePart();
     var collisionDetected = checkCollision(snakeHead);
 
     if (rightMove + snakeHead.offsetWidth - moveDist >= gamebgW || snakeHead.offsetLeft < 1 || downMove + snakeHead.offsetHeight - moveDist >= gamebgH || snakeHead.offsetTop < 1 || collisionDetected) {
@@ -190,9 +215,22 @@ var animationHandler = function animationHandler() {
         }
         updateBodyPos(previousHeadSpot);
     }
+};
 
-    //////////////////////////////////
-    ijnid++;
+var checkFoodCollision = function checkFoodCollision(item) {
+    var collisionDetected = false;
+    var snakeHeadProps = item.getBoundingClientRect();
+    var allFoodElements = document.getElementsByClassName('food');
+    var allFood = [].concat(_toConsumableArray(allFoodElements));
+    for (var i = 0; i < allFood.length; i++) {
+        var foodProps = allFood[i].getBoundingClientRect();
+        collisionDetected = !(snakeHeadProps.y + snakeHeadProps.height < foodProps.y || snakeHeadProps.y > foodProps.y + foodProps.height || snakeHeadProps.x + snakeHeadProps.width < foodProps.x || snakeHeadProps.x > foodProps.x + foodProps.width);
+        if (collisionDetected) {
+            gameBoard.removeChild(allFood[i]);
+            return collisionDetected;
+        }
+    }
+    return collisionDetected;
 };
 
 var checkCollision = function checkCollision(item) {

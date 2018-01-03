@@ -79,8 +79,9 @@ div {
     border:1px solid #ffbb00;
 }
 
-.food {
-
+div.food {
+    background-color: #a16900;
+    position: absolute;
 }
 
 button {
