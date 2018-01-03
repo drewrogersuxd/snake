@@ -1,4 +1,7 @@
 'use strict';
+//snake game
+//author: Drew Rogers
+//date: 01/03/2018
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
@@ -6,7 +9,7 @@ var aniTime = 50;
 var initalPlacement = 10;
 //number of body parts plus head
 //higher number = longer initial snake = harder
-var difficulty = 20;
+var difficulty = 50;
 var snakePartSize = 10;
 var moveDist = snakePartSize;
 var LEFT = 'left';
@@ -25,19 +28,21 @@ var gamebgW = gameBoard.offsetWidth;
 var gamebgH = gameBoard.offsetHeight;
 
 var foodSpacingCol = 50;
-var foodSpacingRow = 20;
-var foodWidth = 20;
+var foodSpacingRow = 40;
+var foodWidth = snakePartSize;
 var foodRowCount = 1;
-
+//will run to animate snake
 var animationInterval = null;
+//will run to count down start of game during instructions
 var countdownTimerInterval = null;
+//how long to show instructions - can be skipped via link below countdown
 var instructionsTime = 10;
-
+//pre-game screen stuff
 var yesButton = document.getElementById('yesBtn');
 var noButton = document.getElementById('noBtn');
 var welcomeModal = document.getElementById('welcome');
 var welcomeContent = document.getElementById('welcomeTxt');
-
+//if you choose to play a game, instruction screen countdown appears before game start
 var yesButtonHandler = function yesButtonHandler(evt) {
     cleanUpWelcomeButtons();
     welcomeContent.innerHTML = 'SNAKE is a game where you move a snake around the<br/> \
@@ -49,7 +54,9 @@ var yesButtonHandler = function yesButtonHandler(evt) {
                                 it is GAME OVER.<br/> \
                                 <p><span>READY PLAYER ONE</span></p> \
                                 <span style="font-size:12px">[coming soon to a theatre near you this Spring]</span><br/> \
-                                <span id="countdownTxt">' + instructionsTime + '</span>';
+                                <span id="countdownTxt">' + instructionsTime + '</span><br/> \
+                                <span id="skipCountdown">play now</span>';
+    document.getElementById('skipCountdown').addEventListener('click', playGame, false);
     countdownTimerInterval = setInterval(countdownTimer, 1000);
 };
 
@@ -57,11 +64,16 @@ var countdownTimer = function countdownTimer() {
     instructionsTime--;
     document.getElementById('countdownTxt').innerHTML = instructionsTime;
     if (instructionsTime === 0) {
-        clearInterval(countdownTimerInterval);
-        welcomeModal.style.display = 'none';
-        // get the game started
-        init();
+        playGame();
     }
+};
+//cleans up instruction stuff and initializes the game
+var playGame = function playGame() {
+    document.getElementById('skipCountdown').removeEventListener('click', playGame);
+    clearInterval(countdownTimerInterval);
+    welcomeModal.style.display = 'none';
+    //get the game started
+    init();
 };
 
 var noButtonHandler = function noButtonHandler(evt) {
@@ -79,13 +91,13 @@ var cleanUpWelcomeButtons = function cleanUpWelcomeButtons() {
     yesButton.removeEventListener('click', yesButtonHandler);
     noButton.removeEventListener('click', noButtonHandler);
 };
-
+//creates a DOM element og type passed in and adds passed in class names
 var makeElement = function makeElement(type, classes) {
     var theElem = document.createElement(type);
     theElem.classList = classes;
     return theElem;
 };
-
+//creates and places food, creates snake and begins moving
 var init = function init() {
     document.addEventListener('keydown', handleArrowKeys, false);
     makeFood();
@@ -94,7 +106,7 @@ var init = function init() {
     initSnake();
     animationInterval = setInterval(animationHandler, aniTime);
 };
-
+//creates food squares and lays them out on game screen in a mildly random chekerboard-like pattern
 var makeFood = function makeFood() {
     for (var i = 0; i < gamebgH; i = i + (foodWidth + foodSpacingRow)) {
         for (var j = 0; j < gamebgW; j = j + (foodWidth + foodSpacingCol)) {
@@ -118,7 +130,8 @@ var makeFood = function makeFood() {
 var isEven = function isEven(n) {
     return n % 2 == 0;
 };
-
+//creates snake segments, head and tail in an array
+//length of initial snake depends on 'difficulty' const
 var makeSnake = function makeSnake() {
     for (var i = 0; i < difficulty; i++) {
         var classname = snakeClasses[1];
@@ -130,7 +143,8 @@ var makeSnake = function makeSnake() {
         snakeParts.push(makeElement('div', 'snake ' + classname));
     }
 };
-
+//positions snake parts to near top of game screen from r to l starting with head
+//tail ending near left edge of screen
 var positionSnake = function positionSnake() {
     snakeHead.style.top = initalPlacement + 'px';
     snakeHead.style.left = difficulty * initalPlacement + 'px';
@@ -139,14 +153,14 @@ var positionSnake = function positionSnake() {
         item.style.left = difficulty * initalPlacement - (index + 1) * snakePartSize + 'px';
     });
 };
-
+//adds snake parts to DOM
 var initSnake = function initSnake() {
     gameBoard.appendChild(snakeHead);
     snakeParts.forEach(function (item, index) {
         gameBoard.appendChild(item);
     });
 };
-
+//adds a new snake body segment when food is eaten, pushing tail back to make snake grow longer
 var addSnakePart = function addSnakePart() {
     //create new body part and add to array
     snakeParts.splice(snakeParts.length - 1, 0, makeElement('div', 'snake ' + snakeClasses[1]));
@@ -174,9 +188,9 @@ var addSnakePart = function addSnakePart() {
         default:
     }
     gameBoard.appendChild(snakeParts[snakeParts.length - 2]);
-    console.log('growing!');
 };
-
+//interval handler - moves snake head according to arrow keys
+//checks for collisions with itself and edges and ends game if so
 var animationHandler = function animationHandler() {
     var upMove = Number(parseInt(snakeHead.style.top, 10) - moveDist);
     var rightMove = Number(parseInt(snakeHead.style.left, 10) + moveDist);
@@ -216,7 +230,8 @@ var animationHandler = function animationHandler() {
         updateBodyPos(previousHeadSpot);
     }
 };
-
+//loops through all remaining food objects on game board to detect if head has eaten one
+//removes food from board if eaten
 var checkFoodCollision = function checkFoodCollision(item) {
     var collisionDetected = false;
     var snakeHeadProps = item.getBoundingClientRect();
@@ -232,7 +247,8 @@ var checkFoodCollision = function checkFoodCollision(item) {
     }
     return collisionDetected;
 };
-
+//loops through all body segments [after first few since head can't really collide with those]
+//detects and returns if head is in collision with any
 var checkCollision = function checkCollision(item) {
     var collisionDetected = false;
     var snakeHeadProps = item.getBoundingClientRect();
@@ -244,7 +260,9 @@ var checkCollision = function checkCollision(item) {
     }
     return collisionDetected;
 };
-
+//after head moves, this takes tail and moves it to old head position
+//simulates animation of all body parts. switches styles from tail to regular body part
+//and new last body part styled as tail
 var updateBodyPos = function updateBodyPos(prevPos) {
     snakeParts[snakeParts.length - 1].classList = 'snake snake_body';
     snakeParts.splice(0, 0, snakeParts.pop());
@@ -252,7 +270,7 @@ var updateBodyPos = function updateBodyPos(prevPos) {
     snakeParts[0].style.top = prevPos.top;
     snakeParts[0].style.left = prevPos.left;
 };
-
+//listens for arrow keys and reports which direction snake should move in
 var handleArrowKeys = function handleArrowKeys(evt) {
     var theKeyCode = evt.keyCode;
     switch (theKeyCode) {
@@ -295,9 +313,13 @@ var handleArrowKeys = function handleArrowKeys(evt) {
         default:
     }
 };
-
+//if snake collides with edges or itself, this cleans up game and displays a game over screen
 var handleGameOver = function handleGameOver() {
     clearInterval(animationInterval);
     document.removeEventListener('keydown', handleArrowKeys);
-    gameBoard.innerHTML = '<div id="gameOver">game over</div>';
+    gameBoard.innerHTML = '<div id="gameOver">game over</div> \
+                    <div id="replayBtn">replay</div>';
+    document.getElementById('replayBtn').addEventListener('click', function (evt) {
+        window.location.reload();
+    }, false);
 };

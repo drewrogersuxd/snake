@@ -1,10 +1,12 @@
 'use strict';
-
+//snake game
+//author: Drew Rogers
+//date: 01/03/2018
 const aniTime = 50;
 const initalPlacement = 10;
 //number of body parts plus head
 //higher number = longer initial snake = harder
-const difficulty = 20;
+const difficulty = 50;
 const snakePartSize = 10;
 const moveDist = snakePartSize;
 const LEFT = 'left';
@@ -23,19 +25,21 @@ let gamebgW = gameBoard.offsetWidth;
 let gamebgH = gameBoard.offsetHeight;
 
 const foodSpacingCol = 50;
-const foodSpacingRow = 20;
-const foodWidth = 20;
+const foodSpacingRow = 40;
+const foodWidth = snakePartSize;
 let foodRowCount = 1;
-
+//will run to animate snake
 let animationInterval = null;
+//will run to count down start of game during instructions
 let countdownTimerInterval = null;
+//how long to show instructions - can be skipped via link below countdown
 let instructionsTime = 10;
-
+//pre-game screen stuff
 const yesButton = document.getElementById('yesBtn');
 const noButton = document.getElementById('noBtn');
 const welcomeModal = document.getElementById('welcome');
 const welcomeContent = document.getElementById('welcomeTxt');
-
+//if you choose to play a game, instruction screen countdown appears before game start
 const yesButtonHandler = (evt) => {
     cleanUpWelcomeButtons();
     welcomeContent.innerHTML = 'SNAKE is a game where you move a snake around the<br/> \
@@ -47,7 +51,9 @@ const yesButtonHandler = (evt) => {
                                 it is GAME OVER.<br/> \
                                 <p><span>READY PLAYER ONE</span></p> \
                                 <span style="font-size:12px">[coming soon to a theatre near you this Spring]</span><br/> \
-                                <span id="countdownTxt">'+instructionsTime+'</span>';
+                                <span id="countdownTxt">'+instructionsTime+'</span><br/> \
+                                <span id="skipCountdown">play now</span>';
+    document.getElementById('skipCountdown').addEventListener('click', playGame, false);
     countdownTimerInterval = setInterval(countdownTimer, 1000);
 };
 
@@ -55,11 +61,16 @@ const countdownTimer = () => {
     instructionsTime--;
     document.getElementById('countdownTxt').innerHTML = instructionsTime;
     if(instructionsTime === 0){
-        clearInterval(countdownTimerInterval);
-        welcomeModal.style.display = 'none';
-        // get the game started
-        init();
+        playGame();
     }
+};
+//cleans up instruction stuff and initializes the game
+const playGame = () => {
+    document.getElementById('skipCountdown').removeEventListener('click', playGame);
+    clearInterval(countdownTimerInterval);
+    welcomeModal.style.display = 'none';
+    //get the game started
+    init();
 };
 
 const noButtonHandler = (evt) => {
@@ -75,13 +86,13 @@ const cleanUpWelcomeButtons = () => {
     yesButton.removeEventListener('click', yesButtonHandler);
     noButton.removeEventListener('click', noButtonHandler);
 };
-
+//creates a DOM element og type passed in and adds passed in class names
 const makeElement = (type, classes) => {
     let theElem = document.createElement(type);
     theElem.classList = classes;
     return theElem;
 };
-
+//creates and places food, creates snake and begins moving
 const init = () => {
     document.addEventListener('keydown', handleArrowKeys, false);
     makeFood();
@@ -90,7 +101,7 @@ const init = () => {
     initSnake();
     animationInterval = setInterval(animationHandler, aniTime);
 };
-
+//creates food squares and lays them out on game screen in a mildly random chekerboard-like pattern
 const makeFood = () => {
     for(let i = 0; i < gamebgH; i = i+(foodWidth+foodSpacingRow)){
         for(let j = 0; j < gamebgW; j = j+(foodWidth+foodSpacingCol)){
@@ -115,7 +126,8 @@ const makeFood = () => {
 const isEven = (n) => {
     return n % 2 == 0;
 };
-
+//creates snake segments, head and tail in an array
+//length of initial snake depends on 'difficulty' const
 const makeSnake = () => {
     for(let i = 0; i < difficulty; i++){
         let classname = snakeClasses[1];
@@ -127,7 +139,8 @@ const makeSnake = () => {
         snakeParts.push(makeElement('div', 'snake '+classname));
     }
 };
-
+//positions snake parts to near top of game screen from r to l starting with head
+//tail ending near left edge of screen
 const positionSnake = () => {
     snakeHead.style.top = initalPlacement+'px';
     snakeHead.style.left = (difficulty*initalPlacement)+'px';
@@ -136,14 +149,14 @@ const positionSnake = () => {
         item.style.left = ((difficulty*initalPlacement)-((index+1)*snakePartSize))+'px';
     });
 };
-
+//adds snake parts to DOM
 const initSnake = () => {
     gameBoard.appendChild(snakeHead);
     snakeParts.forEach((item, index) => {
         gameBoard.appendChild(item);
     });
 };
-
+//adds a new snake body segment when food is eaten, pushing tail back to make snake grow longer
 const addSnakePart = () => {
     //create new body part and add to array
     snakeParts.splice(snakeParts.length-1, 0, makeElement('div', 'snake '+snakeClasses[1]));
@@ -168,7 +181,8 @@ const addSnakePart = () => {
     }
     gameBoard.appendChild(snakeParts[snakeParts.length-2]);
 };
-
+//interval handler - moves snake head according to arrow keys
+//checks for collisions with itself and edges and ends game if so
 const animationHandler = () => {
     const upMove = Number(parseInt(snakeHead.style.top, 10)-moveDist);
     const rightMove = Number(parseInt(snakeHead.style.left, 10)+moveDist);
@@ -210,7 +224,8 @@ const animationHandler = () => {
         updateBodyPos(previousHeadSpot);
     }
 };
-
+//loops through all remaining food objects on game board to detect if head has eaten one
+//removes food from board if eaten
 const checkFoodCollision = (item) => {
     let collisionDetected = false;
     const snakeHeadProps = item.getBoundingClientRect();
@@ -231,7 +246,8 @@ const checkFoodCollision = (item) => {
     }
     return collisionDetected
 };
-
+//loops through all body segments [after first few since head can't really collide with those]
+//detects and returns if head is in collision with any
 const checkCollision = (item) => {
     let collisionDetected = false;
     let snakeHeadProps = item.getBoundingClientRect();
@@ -248,7 +264,9 @@ const checkCollision = (item) => {
     }
     return collisionDetected
 };
-
+//after head moves, this takes tail and moves it to old head position
+//simulates animation of all body parts. switches styles from tail to regular body part
+//and new last body part styled as tail
 const updateBodyPos = (prevPos) => {
     snakeParts[snakeParts.length-1].classList = 'snake snake_body';
     snakeParts.splice(0, 0, snakeParts.pop());
@@ -256,7 +274,7 @@ const updateBodyPos = (prevPos) => {
     snakeParts[0].style.top = prevPos.top;
     snakeParts[0].style.left = prevPos.left;
 };
-
+//listens for arrow keys and reports which direction snake should move in
 const handleArrowKeys = (evt) => {
     let theKeyCode = evt.keyCode;
     switch(theKeyCode) {
@@ -295,9 +313,11 @@ const handleArrowKeys = (evt) => {
         default:
     }
 };
-
+//if snake collides with edges or itself, this cleans up game and displays a game over screen
 const handleGameOver = () => {
     clearInterval(animationInterval);
     document.removeEventListener('keydown', handleArrowKeys);
-    gameBoard.innerHTML = '<div id="gameOver">game over</div>';
+    gameBoard.innerHTML = '<div id="gameOver">game over</div> \
+                    <div id="replayBtn">replay</div>';
+    document.getElementById('replayBtn').addEventListener('click', (evt) => {window.location.reload();}, false);
 };
